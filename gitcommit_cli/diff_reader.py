@@ -1,32 +1,39 @@
 
 import subprocess
 
-def get_staged_diff() -> str:
+class DiffReader:
+    
+    def __init__(self):
+        
+        pass
 
-    """
 
-    Get the staged diff of the current git repository.
+    def get_staged_diff() -> str:
 
-    We do this by essentially running "git diff --staged --no-color" and returning the output.
+        """
 
-    """
+        Get the staged diff of the current git repository.
 
-    result = subprocess.run(
+        We do this by essentially running "git diff --staged --no-color" and returning the output.
 
-        ["git", "diff", "--staged", "--no-color"],
+        """
 
-        capture_output=True,
+        result = subprocess.run(
 
-        text=True,
+            ["git", "diff", "--staged", "--no-color"],
 
-        check = True
+            capture_output=True,
 
-    )
+            text=True,
 
-    return result.stdout
+            check = True
+
+        )
+
+        return result.stdout
 
 if __name__ == "__main__":
 
     # TEST: GET RID OF IN DEPLOYMENT
 
-    print(get_staged_diff())
+    print(DiffReader.get_staged_diff())
