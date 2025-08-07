@@ -1,6 +1,6 @@
 [project]
 
-name = "commit-cli"
+name = "gitcommit-cli"
 version = "0.10"
 description = "Auto-Generate git commit messages via AI(ChatGPT) or Hueristics"
 authors = [{name = "Nirvaan", email = "nirvaan@gmail.com"}]
@@ -18,4 +18,4 @@ all = ["openai", "tree_sitter"]
 
 [project.scripts]
 
-commit-cli = "commit_cli.cli:main"
+gitcommit-cli = "gitcommit_cli.cli:main"
