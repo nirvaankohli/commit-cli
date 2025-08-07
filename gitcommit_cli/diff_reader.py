@@ -1,4 +1,3 @@
-
 import subprocess
 
 class DiffReader:
@@ -21,15 +20,17 @@ class DiffReader:
         result = subprocess.run(
 
             ["git", "diff", "--staged", "--no-color"],
-
+            
             capture_output=True,
-
+            
             text=True,
-
-            check = True
+            
+            encoding="utf-8",
+            
+            check=True
 
         )
-
+        
         return result.stdout
 
 if __name__ == "__main__":
