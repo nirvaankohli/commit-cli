@@ -1,74 +1,103 @@
 from __future__ import annotations
 
+import os
+import sys
+import re
+import json
+import shutil
 import subprocess
 from textwrap import dedent
 from typing import Optional
 
-from huggingface_hub import InferenceClient
+# I made the prompt myself, put it into a custom GPT that specializes with prompt engineering, and then edited myself.
 
 SYSPROMPT = dedent(
+
+    """\
     
-"""\
+    Follow these guidelines to generate a high-quality commit message:
+
+        * **Subject (summary):** imperative present, LESS THAN 80 chars, capitalize first word, no period. They should not be cut off.
+        
+        * **Body (optional):** blank line after subject; wrap ~200 chars; explain **what** + **why** (not how); add key context/side effects.
+        
+        * **Types (optional):** use Conventional Commits (`feat:`, `fix:`, etc.) with optional scope, e.g., `feat(parser): add array support`. Make sure to use the correct type for the commit message THESE ARE IMPORTANT.
+        
+        * **Atomic commits:** one purpose per commit; reference issue IDs, but don’t rely on them to explain intent.
+        
+        * **Think future:** messages should help teammates trace **why** a change happened and ease reviews/debugging.
+        
+        * **Footers:** issues, reviewers, breaking changes, etc.
+
+        **Conventional Commits spec:** https://www.conventionalcommits.org/en/v1.0.0/
+
+        * **Purpose:** generate a concise, clear commit message based on the provided git diff. People should be able to tell what code was changed without opening the code and instead reading the commit message.
+
+    **Template**
+
+    ```
+
+    ## <type>(<scope>): <Short imperative summary – less or equal to 80 chars>
+
+    <Optional body ~200 chars>
     
-You are an expert software assistant that writes high-quality Git commit messages.
-Follow the Conventional Commits spec when possible.
+    - Explain why this change is needed
+    
+    - Note side effects/context
 
-Rules:
-                       
-- Output a concise subject line <= 72 chars.
+    Issues: #123 (if applicable)
+    Reviewed-by: Alice (if applicable)
 
-- Use present tense, imperative mood.
+    Example:
 
-- Infer type: feat, fix, refactor, docs, test, chore, build, ci, perf, style.
+    ## feat(parser): add array support
 
-- If multiple themes exist, pick the most significant one.
+    * Added support for parsing arrays in the configuration file.
 
-- Optionally add a short body (wrapped at 72 chars) when helpful.
+    * This change allows users to define arrays in their config files, improving flexibility.
 
-- Never include file headers in the subject; summarize the intent.
-                       
-"""
+    * This is a breaking change as it changes the way arrays are handled in the parser.
+
+
+    ```
+
+    """
 
 ).strip()
+
 
 class llm:
 
     """
-    
-    A class to create commit messages using the Hugging Face Transformers library.
+
+        A class to create commit messages using the Hack Club AI chat completions
+        endpoint (no API key required). Local model usage has been removed.
     
     """
 
-    def __init__():
+    def __init__(self):
 
-        pass
+        self._have_curl = shutil.which("curl") is not None
 
     def build_prompt(
             
-            self,
-
-            diff:str,
-
+            self, 
+            
+            diff: str, 
+            
             project_context: Optional[str] = None
-
-    ):
+                    
+            ):
         
         ctx = f"\n\nProject context:\n{project_context}" if project_context else ""
-
+        
         return dedent(
 
             f"""\
-            
-            Summarize the following git diff into a Conventional Commit message.
-
-                Requirements:
-                - Capture intent and scope.
-                - Mention notable APIs, migrations, flags, or configs if present.
-                - 1-line subject (<=72 chars). Wrap any body at 72 columns.
 
             {ctx}
 
-            Git Diff you must summarize:
+            The Git Diff you must summarize: SUMMARIZE THE FOLLOWING DIFF AND GENERATE A COMMIT MESSAGE BASED ON IT. DO NOT EXPLAIN YOURSELF OR ADD ANYTHING ELSE. DO NOT USE CODE FENCES OR MARKDOWN. DO NOT ADD ANYTHING ELSE OUTSIDE OF THE COMMIT MESSAGE. DO NOT ADD ANYTHING ELSE OUTSIDE OF THE COMMIT MESSAGE. DO NOT ADD ANYTHING ELSE OUTSIDE OF THE COMMIT MESSAGE.
 
             ---
 
@@ -76,116 +105,210 @@ class llm:
 
             ---
                 
-            RETURN ONLY THE COMMIT MESSAGE, DO NOT RETURN ANYTHING ELSE. YOUR ONLY OUTPUT SHOULD BE THE COMMIT MESSAGE.
+            You must return ONLY the commit message, nothing else.
+            Enclose your entire output strictly between these markers:
 
-            YOUR ONLY JOB IS TO RETURN THE COMMIT MESSAGE, DO NOT RETURN ANYTHING ELSE.
+            <<<COMMIT>>>
 
-            It should be a high-quality commit message that follows the Conventional Commits spec.
+            <commit message only>
 
+            <<<END>>>
+
+            It must follow the Conventional Commits spec.
+            
             """
-
-
+        
         ).strip()
+
+    def _trim_diff(
+            
+            self, 
+            
+            diff: str, 
+            
+            max_chars: int = 3000
+            
+            ) -> str:
+        
+        """
+        
+        Fast guardrail for very large diffs. Kept smaller for speed.
+        
+        """
+        
+        d = diff.strip()
+        
+        if len(d) <= max_chars:
+        
+            return d
+        
+        head = d[: max_chars // 2]
+        tail = d[-(max_chars // 2) :]
+        
+        return head + "\n...\n[diff truncated]\n...\n" + tail
+
+    def _extract_commit(self, text: str) -> str:
+        
+        """
+        
+        Sanitize/normalize LLM output to ensure ONLY a commit message is returned.
+        
+        """
+        t = text.strip()
+
+
+        if "<<<COMMIT>>>" in t and "<<<END>>>" in t:
+            t = t.split("<<<COMMIT>>>", 1)[1].split("<<<END>>>", 1)[0].strip()
+
+
+        t = t.replace("```", "").strip()
+        lines = []
+        for ln in t.splitlines():
+
+            s = ln.strip()
+
+            if not s:
+
+                lines.append("")
+
+                continue
+
+            if s.startswith(("---", "diff --git", "index ")):
+
+                continue
+
+            if s.lower().startswith(("here's a high-quality", "here is a high-quality", "here’s a high-quality")):
+
+                continue
+            
+            lines.append(ln)
+
+        t = "\n".join(lines).strip()
+
+
+        cc_re = re.compile(r"^(feat|fix|chore|refactor|docs|test|perf|style|build|ci|revert)(\([^)]+\))?:\s.+", re.IGNORECASE)
+        first_valid = None
+
+        for ln in t.splitlines():
+            if cc_re.match(ln.strip()):
+                first_valid = ln.strip()
+                break
+
+        if first_valid is None:
+
+            parts = [p for p in t.splitlines() if p.strip()]
+            subject = parts[0].strip() if parts else "chore: update"
+            body = "\n".join(p.rstrip() for p in parts[1:]).strip()
+        else:
+
+            before, _, after = t.partition(first_valid)
+            subject = first_valid
+            body = after.split("\n", 1)[1].strip() if "\n" in after else ""
+
+
+        subject = subject.strip()
+        body = "\n".join(line.rstrip() for line in body.splitlines()).strip()
+
+        return f"{subject}\n\n{body}" if body else subject
+
+    def _generate_remote(
+            
+            self,
+            
+            prompt: str,
+            
+            max_tokens: int,
+            
+            temperature: float
+    
+    ) -> str:
+        
+        """
+        
+        Use Hack Club AI (no key required) via curl for fast generation. 
+        
+        """
+
+        if not self._have_curl:
+
+            return "chore: update (curl not available)"
+
+        model_name = os.getenv(
+            "HACKCLUB_MODEL",
+            "meta-llama/llama-4-maverick-17b-128e-instruct"
+        )
+
+        payload = {
+            "messages": [
+                {"role": "system", "content": SYSPROMPT},
+                {"role": "user", "content": prompt},
+            ],
+            "model": model_name,
+            "max_tokens": max(48, min(max_tokens, 96)),
+            "temperature": max(0.0, float(temperature)),
+            "stop": ["<<<END>>>"],
+        }
+
+        try:
+
+            cmd = [
+                "curl",
+                "-sS",
+                "-X", "POST",
+                "https://ai.hackclub.com/chat/completions",
+                "-H", "Content-Type: application/json",
+                "-d", json.dumps(payload),
+            ]
+
+            out = subprocess.run(cmd, check=True, capture_output=True, text=True)
+            data = json.loads(out.stdout)
+            msg = data["choices"][0]["message"]["content"]
+
+            return self._extract_commit(msg)
+        
+        except Exception:
+            return "chore: update (remote generation failed)"
 
     def generate_commit_message(
             
-            self,
-             
-            diff: str,
-
-            model_name: str = "meta-llama/Llama-3.2-3B-Instruct", # MODEL
-
-            max_tokens: int = 2000,
-
-            temperature: float = 0.2,
-
-            base_url: Optional[str] = None,
-            
-            ) -> str:
-
-        """
+        self,
         
-        Generate a commit message based on the provided diff using a pre-trained model.
+        diff: str,
         
-        This method uses a pre-trained model from Hugging Face Transformers to generate a commit message.
+        max_tokens: int = 120,
         
-        Args:
-
-            diff (str): The diff string from which to generate the commit message.
-
-            model_name (str): The name of the pre-trained model to use. Default is "meta-llama/Llama-3.2-3B-Instruct".
-
-            max_tokens (int): The maximum number of tokens to generate. Default is 2000.
-
-            temperature (float): The sampling temperature to use. Default is 0.2.
-
-            base_url (Optional[str]): Optional base URL for the Hugging Face Inference API.
+        temperature: float = 0.0,
         
-        Returns:
-
-            str: A commit message generated by the model.
+        project_context: Optional[str] = None,
+    
+    ) -> str:
         
         """
         
-        client = InferenceClient(
-            
-            model=model_name, # see above
-            
-            base_url=base_url # see above(Most of the time this will be None)
-            
-            )
+        Generate a commit message based on the provided diff using the
+        Hack Club AI endpoint only.
         
-        # Create the messages for the chat completion request
-        
-        messages = [
+        """
 
-            {"role": "system", "content": SYSPROMPT},
+        fast_diff = self._trim_diff(diff) 
+        prompt = self.build_prompt(fast_diff, project_context)
 
-            {"role": "user", "content": self.build_prompt(diff)}
+        return self._generate_remote(prompt, max_tokens, temperature)
 
-            ]
-        
-        # Call the chat completion endpoint of the model, supplying the messages and other parameters
-
-        response = client.chat_completion(
-
-            messages=messages,
-
-            max_tokens=max_tokens,
-
-            temperature=temperature
-
-            )
-        
-        # Extract and return the generated commit message from the response
-
-        text = response.choices[0].message.content.strip()
-
-        # Normalize the commit message to ensure it follows the common conventions we provided
-
-        if "\n\n" in text:
-
-            subject, body = text.split("\n\n", 1)
-            subject = subject.strip()[:72]
-            body = "\n".join(line.rstrip() for line in body.splitlines()).strip()
-
-            return f"{subject}\n\n{body}" if body else subject
-        
-        else:
-
-            return text.splitlines()[0][:72].strip()
-
-        
 
 def get_staged_diff() -> str:
 
     """
-    
-    Reads staged changes (index).
+
+    Reads staged changes with minimal context for speed and smaller prompts.
     
     """
 
-    out = subprocess.check_output(["git", "diff", "--staged", "--no-color"])
+    out = subprocess.check_output(
+
+        ["git", "diff", "--staged", "--no-color", "-U0", "--diff-algorithm=patience"]
+    
+    )
 
     return out.decode("utf-8", errors="replace").strip()
 
@@ -197,11 +320,14 @@ if __name__ == "__main__":
     if not diff:
 
         print("chore: update (no staged changes)")
-
+    
     else:
-        
+
         model = llm()
-
-        commit_message = model.generate_commit_message(diff)
-
+        commit_message = model.generate_commit_message(
+            diff,
+            max_tokens=96,
+            temperature=0.0,
+            project_context=None,
+        )
         print(commit_message)
