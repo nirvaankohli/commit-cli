@@ -1,12 +1,2 @@
-
-
-class transformer:
-
-    """
-
-    A class that provides a transformer for git commit messages.
-
-
-    """
-
-    
+__all__ = ["__version__", "main"]
+__version__ = "0.1.0"
