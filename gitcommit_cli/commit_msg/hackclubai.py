@@ -324,10 +324,5 @@ if __name__ == "__main__":
     else:
 
         model = llm()
-        commit_message = model.generate_commit_message(
-            diff,
-            max_tokens=96,
-            temperature=0.0,
-            project_context=None,
-        )
+        commit_message = model
         print(commit_message)

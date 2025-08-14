@@ -1,6 +1,6 @@
 import re 
 from diff_reader import DiffReader
-from commit_msg.huggingfacetransformers import llm
+from gitcommit_cli.commit_msg.hackclubai import llm
 
 def generate_commit_message(diff: str, open_ai_key: str = "") -> str:
 
@@ -27,17 +27,22 @@ def generate_commit_message(diff: str, open_ai_key: str = "") -> str:
     
     elif open_ai_key.strip() != "":
 
-        # PUT IN OPENAI FUNCTIONALITY HERE LATER
+
 
         return "OpenAI functionality not yet implemented."
 
     else:
 
-        # Use our hugging face transformer model wrapper class to generate the commit message
-
         model = llm()
 
-        commit_message = model.generate_commit_message(diff)
+        commit_message = model.generate_commit_message(
+
+            diff,
+            max_tokens=150,
+            temperature=0.0,
+            project_context=None,
+            
+        )
 
         return commit_message
 
