@@ -26,13 +26,15 @@ def parse_args():
     )
 
 
+
     return parser.parse_args()
 
 # --- Main CLI Entry ---
 
 def main():
 
-
+    print(ASCII_BANNER)
+    args = parse_args()
 
 if __name__ == "__main__":
     main()
