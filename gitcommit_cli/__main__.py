@@ -147,7 +147,31 @@ def commit(skip_confirmation:bool = False ):
 
         )
 
-        print("\n Commit Completed!")  
+        print("\n Commit Completed!") 
+
+def commit_message():
+
+    print("Analyzing staged changes...")
+
+    ai_client = llm()
+
+    commit_msg = ai_client.generate_commit_message(
+        
+        diff=DiffReader.get_staged_diff(),
+
+        max_tokens=350
+        
+        )
+
+    print(f"""
+
+\n
+
+The following is the commit message our CLI generated: (Copy Pastable)
+          
+{commit_msg}
+          
+          """)
 
 
         
@@ -173,7 +197,7 @@ def main():
 
     elif args.command == "commit_msg":
 
-        print("[Commit Message] Generating commit message preview")
+        commit_message()
 
 
 if __name__ == "__main__":
