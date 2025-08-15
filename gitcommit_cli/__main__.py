@@ -54,7 +54,7 @@ def parse_args():
             
             "gitcommit-cli auto-generates git commit messages "
             
-            "by analyzing staged diffs with ai.hackclub.com or an OpenAI key.\n"
+            "by analyzing staged diffs with ai.hackclub.com.\n"
             
             "Preview the generated message and commit in one smooth command."
         

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gitcommit-cli"
-version = "0.10.0"
-description = "Auto-generate git commit messages via AI (ai.hackclub.com) and then commit them with one smooth command."
+version = "2.0.0"
+description = "From staged changes to perfect commits in one command. AI-powered commit message generation that actually understands your code."
 readme = "READMEPKG.md"
 requires-python = ">=3.8"
 authors = [{ name = "Nirvaan", email = "nirvaan@gmail.com" }]
@@ -17,10 +17,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-openai = ["openai>=1.0.0"]
 treesitter = ["tree_sitter[python]>=0.20.0"]
 all = [
-  "openai>=1.0.0",
   "tree_sitter[python]>=0.20.0"
 ]
 
