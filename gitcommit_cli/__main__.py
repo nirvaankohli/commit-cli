@@ -101,13 +101,21 @@ def commit(skip_confirmation:bool = False ):
 
     ai_client = llm()
 
-    commit_msg = ai_client.generate_commit_message(
-        
-        diff=DiffReader.get_staged_diff(),
+    staged_diff = DiffReader.get_staged_diff()
 
-        max_tokens=350
-        
-        )
+    if "CompletedProcess(args=['git', 'diff', '--staged', '--no-color'], returncode=0, stdout='', stderr='')" in str(staged_diff) :
+
+        commit_msg = "chore: update (no staged changes)"
+
+    else:
+
+        commit_msg = ai_client.generate_commit_message(
+            
+            diff=staged_diff,
+
+            max_tokens=350
+            
+            )
     
     print(display_commit_message(commit_msg))
 
@@ -130,7 +138,7 @@ def commit(skip_confirmation:bool = False ):
                   
         else:
         
-            print("\n Canceling..")
+            print("\n Canceling...")
 
 
 
@@ -188,7 +196,7 @@ def main():
 
         if args.skip_confirmation:
 
-            commit
+            commit(skip_confirmation=True)
         
         else:
 

@@ -3,6 +3,6 @@ gitcommit-cli is a CLI tool that auto-generates git commit messages by analyzing
 
 > 
 > pip install --upgrade build
-> python -m build
+> 
 >
 > pip install -e .
