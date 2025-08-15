@@ -180,6 +180,10 @@ class llm:
             if s.lower().startswith(("here's a high-quality", "here is a high-quality", "here’s a high-quality")):
 
                 continue
+
+            if s.lower().startswith(("<<<COMMIT>>>", "<<<END>>>")) or "<<<COMMIT>>>" in s or "<<<END>>>" in s:
+
+                continue
             
             lines.append(ln)
 
