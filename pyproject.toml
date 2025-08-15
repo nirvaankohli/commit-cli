@@ -5,8 +5,8 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gitcommit-cli"
 version = "0.10.0"
-description = "Auto-generate git commit messages via AI (ChatGPT) or heuristics"
-readme = "README.md"
+description = "Auto-generate git commit messages via AI (ai.hackclub.com) and then commit them with one smooth command."
+readme = "READMEPKG.md"
 requires-python = ">=3.8"
 authors = [{ name = "Nirvaan", email = "nirvaan@gmail.com" }]
 dependencies = [
