@@ -115,7 +115,7 @@ def commit(skip_confirmation:bool = False ):
 
         approve = input("Continue with the commit: (y/n) ")
 
-        if approve.lower() != "y":
+        if approve.lower() == "y":
 
             print("\n Continuing with the commit...")
 
