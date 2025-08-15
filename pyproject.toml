@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gitcommit-cli"
-version = "2.1.0"
+version = "2.1.1"
 description = "From staged changes to perfect commits in one command. AI-powered commit message generation that actually understands your code."
 readme = "READMEPKG.md"
 requires-python = ">=3.8"

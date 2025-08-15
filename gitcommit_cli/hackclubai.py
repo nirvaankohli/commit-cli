@@ -37,7 +37,7 @@ SYSPROMPT = dedent(
 
     ```
 
-    ## <type>(<scope>): <Short imperative summary – less or equal to 80 chars>
+    <type>(<scope>): <Short imperative summary – less or equal to 80 chars>
 
     <Optional body ~200 chars>
     
@@ -184,7 +184,7 @@ class llm:
             if s.lower().startswith(("<<<COMMIT>>>", "<<<END>>>")) or "<<<COMMIT>>>" in s or "<<<END>>>" in s:
 
                 continue
-            
+
             lines.append(ln)
 
         t = "\n".join(lines).strip()
