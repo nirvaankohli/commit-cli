@@ -273,7 +273,7 @@ class llm:
             
         self,
         
-        diff: str,
+        diff,
         
         max_tokens: int = 120,
         
@@ -289,6 +289,12 @@ class llm:
         Hack Club AI endpoint only.
         
         """
+
+        if not diff:
+
+            return("chore: update (no staged changes)")
+        
+        diff = str(diff)
 
         fast_diff = self._trim_diff(diff) 
         prompt = self.build_prompt(fast_diff, project_context)
@@ -324,5 +330,5 @@ if __name__ == "__main__":
     else:
 
         model = llm()
-        commit_message = model
+        commit_message = model.generate_commit_message(diff)
         print(commit_message)

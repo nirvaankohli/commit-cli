@@ -31,10 +31,8 @@ class DiffReader:
 
         )
         
-        return result.stdout
+        return result
 
 if __name__ == "__main__":
-
-    # TEST: GET RID OF IN DEPLOYMENT
-
+    
     print(DiffReader.get_staged_diff())
